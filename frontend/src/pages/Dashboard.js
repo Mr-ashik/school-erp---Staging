@@ -87,6 +87,12 @@ function Dashboard() {
                    cursor: 'pointer' }}>
           📅 Attendance
         </button>
+        <button onClick={() => navigate('/attendance-report')}
+          style={{ padding: '10px 20px', backgroundColor: '#607D8B',
+           color: 'white', border: 'none', borderRadius: '5px',
+           cursor: 'pointer' }}>
+          📋 Attendance Report
+        </button>
       </div>
     </div>
   );
