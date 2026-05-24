@@ -5,16 +5,28 @@ import axios from 'axios';
 function EditStudent() {
   const { docno } = useParams();
   const navigate = useNavigate();
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
   const [formData, setFormData] = useState({
     STD_STUDENTNAME: '',
     STD_CLASS: '',
     STD_SECTION: '',
     STD_MOBILE: '',
-    STD_ADMISSIONDATE: ''
+    STD_ADMISSIONDATE: '',
+    STD_CLS_DOCNO: '',
+    STD_SEC_DOCNO: ''
   });
 
-  // Load existing student data
+  // Load classes, sections and student data
   useEffect(() => {
+    axios.get('http://127.0.0.1:8000/classes/')
+      .then(res => setClasses(res.data))
+      .catch(err => console.error(err));
+
+    axios.get('http://127.0.0.1:8000/sections/')
+      .then(res => setSections(res.data))
+      .catch(err => console.error(err));
+
     axios.get(`http://127.0.0.1:8000/students/${docno}`)
       .then(res => setFormData(res.data))
       .catch(err => console.error(err));
@@ -29,7 +41,7 @@ function EditStudent() {
     axios.put(`http://127.0.0.1:8000/students/${docno}`, formData)
       .then(() => {
         alert('Student updated successfully!');
-        navigate('/');
+        navigate('/students');
       })
       .catch(err => console.error(err));
   };
@@ -48,19 +60,29 @@ function EditStudent() {
         </div>
         <div style={{ marginBottom: '15px' }}>
           <label>Class</label><br />
-          <input name="STD_CLASS"
-            value={formData.STD_CLASS}
+          <select name="STD_CLS_DOCNO"
+            value={formData.STD_CLS_DOCNO}
             onChange={handleChange}
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            required />
+            required>
+            <option value="">Select Class</option>
+            {classes.map(c => (
+              <option key={c.CLS_DOCNO} value={c.CLS_DOCNO}>{c.CLS_NAME}</option>
+            ))}
+          </select>
         </div>
         <div style={{ marginBottom: '15px' }}>
           <label>Section</label><br />
-          <input name="STD_SECTION"
-            value={formData.STD_SECTION}
+          <select name="STD_SEC_DOCNO"
+            value={formData.STD_SEC_DOCNO}
             onChange={handleChange}
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            required />
+            required>
+            <option value="">Select Section</option>
+            {sections.map(s => (
+              <option key={s.SEC_DOCNO} value={s.SEC_DOCNO}>{s.SEC_NAME}</option>
+            ))}
+          </select>
         </div>
         <div style={{ marginBottom: '15px' }}>
           <label>Mobile</label><br />
@@ -83,7 +105,7 @@ function EditStudent() {
                    cursor: 'pointer', marginRight: '10px' }}>
           Update Student
         </button>
-        <button type="button" onClick={() => navigate('/')}
+        <button type="button" onClick={() => navigate('/students')}
           style={{ padding: '10px 20px', backgroundColor: '#f44336',
                    color: 'white', border: 'none', borderRadius: '5px',
                    cursor: 'pointer' }}>

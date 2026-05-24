@@ -27,13 +27,13 @@ def get_dashboard():
     cursor = conn.cursor()
 
     # Total Students
-    cursor.execute("SELECT COUNT(*) FROM StudentMaster WHERE STD_ISACTIVE = 1")
+    cursor.execute("SELECT COUNT(*) FROM STUDENT_MASTER WHERE STD_ISACTIVE = 1")
     total_students = cursor.fetchone()[0]
 
     # Today's Attendance
     cursor.execute("""
         SELECT COUNT(DISTINCT ATT_STD_DOCNO) 
-        FROM ATTENDANCEMASTER 
+        FROM ATTENDANCE_MASTER 
         WHERE ATT_DATE = CAST(GETDATE() AS DATE)
         AND ATT_ISACTIVE = 1
     """)

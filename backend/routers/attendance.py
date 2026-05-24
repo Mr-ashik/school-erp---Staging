@@ -25,7 +25,7 @@ class AttendanceSubmit(BaseModel):
 def get_next_docno(cursor):
     cursor.execute("""
         SELECT TOP 1 ATT_DOCNO 
-        FROM ATTENDANCEMASTER
+        FROM ATTENDANCE_MASTER
         WHERE ATT_DOCTYPE = 'ATT'
         ORDER BY ATT_DOCNO DESC
     """)
@@ -56,9 +56,13 @@ def get_students_by_class(cls: str, section: str):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT STD_DOCNO, STD_STUDENTNAME, STD_CLASS, STD_SECTION
-        FROM StudentMaster
-        WHERE STD_CLASS = ? AND STD_SECTION = ? AND STD_ISACTIVE = 1
+        SELECT STD_DOCNO, STD_STUDENTNAME, CLS_NAME, SEC_NAME
+        FROM STUDENT_MASTER
+        INNER JOIN CLASS_MASTER  ON
+            STD_CLS_DOCNO = CLS_DOCNO
+        INNER JOIN SECTION_MASTER ON
+            STD_SEC_DOCNO = SEC_DOCNO
+        WHERE STD_CLS_DOCNO = ? AND STD_SEC_DOCNO = ? AND STD_ISACTIVE = 1
     """, (cls, section))
     rows = cursor.fetchall()
     conn.close()
@@ -73,7 +77,7 @@ def mark_attendance(data: AttendanceSubmit):
     for record in data.records:
         # Check if already marked
         cursor.execute("""
-            SELECT COUNT(*) FROM ATTENDANCEMASTER
+            SELECT COUNT(*) FROM ATTENDANCE_MASTER
             WHERE ATT_DATE = ? AND ATT_SES_DOCNO = ? AND ATT_STD_DOCNO = ?
         """, (data.ATT_DATE, data.ATT_SES_DOCNO, record.ATT_STD_DOCNO))
         exists = cursor.fetchone()[0]
@@ -81,7 +85,7 @@ def mark_attendance(data: AttendanceSubmit):
             continue  # Skip already marked
         docno = get_next_docno(cursor)
         cursor.execute("""
-            INSERT INTO ATTENDANCEMASTER
+            INSERT INTO ATTENDANCE_MASTER
             (ATT_DOCTYPE, ATT_DOCNO, ATT_DATE, ATT_SES_DOCNO, ATT_STD_DOCNO,
              ATT_STD_NAME, ATT_CLASS, ATT_SECTION, ATT_STATUS, ATT_REMARKS)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -101,7 +105,7 @@ def get_attendance_report(cls: str, section: str, att_date: date):
     cursor.execute("""
         SELECT A.ATT_STD_DOCNO, A.ATT_STD_NAME, A.ATT_STATUS, 
                A.ATT_REMARKS, S.SES_NAME
-        FROM ATTENDANCEMASTER A
+        FROM ATTENDANCE_MASTER A
         JOIN SESSION_MASTER S ON A.ATT_SES_DOCNO = S.SES_DOCNO
         WHERE A.ATT_CLASS = ? AND A.ATT_SECTION = ? AND A.ATT_DATE = ?
         AND A.ATT_ISACTIVE = 1

@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function AddStudent() {
   const navigate = useNavigate();
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
   const [formData, setFormData] = useState({
     STD_STUDENTNAME: '',
     STD_CLASS: '',
     STD_SECTION: '',
     STD_MOBILE: '',
-    STD_ADMISSIONDATE: ''
+    STD_ADMISSIONDATE: '',
+    STD_CLS_DOCNO: '',
+    STD_SEC_DOCNO: ''
   });
+
+  // Load classes and sections on page load
+  useEffect(() => {
+    axios.get('http://127.0.0.1:8000/classes/')
+      .then(res => setClasses(res.data))
+      .catch(err => console.error(err));
+
+    axios.get('http://127.0.0.1:8000/sections/')
+      .then(res => setSections(res.data))
+      .catch(err => console.error(err));
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,7 +36,7 @@ function AddStudent() {
     axios.post('http://127.0.0.1:8000/students/', formData)
       .then(res => {
         alert('Student added successfully! Doc No: ' + res.data.STD_DOCNO);
-        navigate('/');
+        navigate('/students');
       })
       .catch(err => console.error(err));
   };
@@ -38,15 +53,25 @@ function AddStudent() {
         </div>
         <div style={{ marginBottom: '15px' }}>
           <label>Class</label><br />
-          <input name="STD_CLASS" onChange={handleChange}
+          <select name="STD_CLS_DOCNO" onChange={handleChange}
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            required />
+            required>
+            <option value="">Select Class</option>
+            {classes.map(c => (
+              <option key={c.CLS_DOCNO} value={c.CLS_DOCNO}>{c.CLS_NAME}</option>
+            ))}
+          </select>
         </div>
         <div style={{ marginBottom: '15px' }}>
           <label>Section</label><br />
-          <input name="STD_SECTION" onChange={handleChange}
+          <select name="STD_SEC_DOCNO" onChange={handleChange}
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            required />
+            required>
+            <option value="">Select Section</option>
+            {sections.map(s => (
+              <option key={s.SEC_DOCNO} value={s.SEC_DOCNO}>{s.SEC_NAME}</option>
+            ))}
+          </select>
         </div>
         <div style={{ marginBottom: '15px' }}>
           <label>Mobile</label><br />
@@ -65,7 +90,7 @@ function AddStudent() {
                    cursor: 'pointer', marginRight: '10px' }}>
           Save Student
         </button>
-        <button type="button" onClick={() => navigate('/')}
+        <button type="button" onClick={() => navigate('/students')}
           style={{ padding: '10px 20px', backgroundColor: '#f44336',
                    color: 'white', border: 'none', borderRadius: '5px',
                    cursor: 'pointer' }}>

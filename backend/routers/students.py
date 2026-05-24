@@ -5,26 +5,26 @@ from datetime import date
 
 router = APIRouter()
 
-# This defines what data we expect when adding a student
 class Student(BaseModel):
     STD_STUDENTNAME: str
     STD_CLASS: str
     STD_SECTION: str
     STD_MOBILE: str
     STD_ADMISSIONDATE: date
+    STD_CLS_DOCNO: str
+    STD_SEC_DOCNO: str
 
-# Auto generate next document number (STU-0001, STU-0002...)
 def get_next_docno(cursor):
     cursor.execute("""
         SELECT TOP 1 STD_DOCNO 
-        FROM StudentMaster 
+        FROM STUDENT_MASTER 
         WHERE STD_DOCTYPE = 'STU'
         ORDER BY STD_DOCNO DESC
     """)
     row = cursor.fetchone()
     if row is None:
         return "STU-0001"
-    last = row[0]  # e.g. STU-0005
+    last = row[0]
     num = int(last.split("-")[1]) + 1
     return f"STU-{num:04d}"
 
@@ -35,11 +35,13 @@ def add_student(student: Student):
     cursor = conn.cursor()
     docno = get_next_docno(cursor)
     cursor.execute("""
-        INSERT INTO StudentMaster 
-        (STD_DOCTYPE, STD_DOCNO, STD_STUDENTNAME, STD_CLASS, STD_SECTION, STD_MOBILE, STD_ADMISSIONDATE)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, ('STU', docno, student.STD_STUDENTNAME, student.STD_CLASS, 
-          student.STD_SECTION, student.STD_MOBILE, student.STD_ADMISSIONDATE))
+        INSERT INTO STUDENT_MASTER 
+        (STD_DOCTYPE, STD_DOCNO, STD_STUDENTNAME, STD_CLASS, STD_SECTION, 
+         STD_MOBILE, STD_ADMISSIONDATE, STD_CLS_DOCNO, STD_SEC_DOCNO)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, ('STU', docno, student.STD_STUDENTNAME, student.STD_CLASS,
+          student.STD_SECTION, student.STD_MOBILE, student.STD_ADMISSIONDATE,
+          student.STD_CLS_DOCNO, student.STD_SEC_DOCNO))
     conn.commit()
     conn.close()
     return {"message": "Student added successfully", "STD_DOCNO": docno}
@@ -50,10 +52,15 @@ def get_students():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT STD_DOCTYPE, STD_DOCNO, STD_STUDENTNAME, 
-               STD_CLASS, STD_SECTION, STD_MOBILE, STD_ADMISSIONDATE 
-        FROM StudentMaster 
-        WHERE STD_ISACTIVE = 1
+        SELECT S.STD_DOCTYPE, S.STD_DOCNO, S.STD_STUDENTNAME, 
+               C.CLS_NAME, SEC.SEC_NAME, S.STD_MOBILE, 
+               S.STD_ADMISSIONDATE, S.STD_CLS_DOCNO, S.STD_SEC_DOCNO
+        FROM STUDENT_MASTER S
+        INNER JOIN CLASS_MASTER C ON
+                S.STD_CLS_DOCNO = C.CLS_DOCNO
+        INNER JOIN SECTION_MASTER SEC ON
+                S.STD_SEC_DOCNO = SEC.SEC_DOCNO
+        WHERE S.STD_ISACTIVE = 1
     """)
     rows = cursor.fetchall()
     conn.close()
@@ -66,7 +73,9 @@ def get_students():
             "STD_CLASS": row[3],
             "STD_SECTION": row[4],
             "STD_MOBILE": row[5],
-            "STD_ADMISSIONDATE": str(row[6])
+            "STD_ADMISSIONDATE": str(row[6]),
+            "STD_CLS_DOCNO": row[7],
+            "STD_SEC_DOCNO": row[8]
         })
     return students
 
@@ -77,8 +86,9 @@ def get_student(docno: str):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT STD_DOCTYPE, STD_DOCNO, STD_STUDENTNAME,
-               STD_CLASS, STD_SECTION, STD_MOBILE, STD_ADMISSIONDATE
-        FROM StudentMaster
+               STD_CLASS, STD_SECTION, STD_MOBILE, 
+               STD_ADMISSIONDATE, STD_CLS_DOCNO, STD_SEC_DOCNO
+        FROM STUDENT_MASTER
         WHERE STD_DOCNO = ? AND STD_ISACTIVE = 1
     """, (docno,))
     row = cursor.fetchone()
@@ -92,7 +102,9 @@ def get_student(docno: str):
         "STD_CLASS": row[3],
         "STD_SECTION": row[4],
         "STD_MOBILE": row[5],
-        "STD_ADMISSIONDATE": str(row[6])
+        "STD_ADMISSIONDATE": str(row[6]),
+        "STD_CLS_DOCNO": row[7],
+        "STD_SEC_DOCNO": row[8]
     }
 
 # UPDATE STUDENT
@@ -101,16 +113,19 @@ def update_student(docno: str, student: Student):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE StudentMaster
+        UPDATE STUDENT_MASTER
         SET STD_STUDENTNAME = ?,
             STD_CLASS = ?,
             STD_SECTION = ?,
             STD_MOBILE = ?,
-            STD_ADMISSIONDATE = ?
+            STD_ADMISSIONDATE = ?,
+            STD_CLS_DOCNO = ?,
+            STD_SEC_DOCNO = ?
         WHERE STD_DOCNO = ?
     """, (student.STD_STUDENTNAME, student.STD_CLASS,
           student.STD_SECTION, student.STD_MOBILE,
-          student.STD_ADMISSIONDATE, docno))
+          student.STD_ADMISSIONDATE, student.STD_CLS_DOCNO,
+          student.STD_SEC_DOCNO, docno))
     conn.commit()
     conn.close()
     return {"message": "Student updated successfully"}
@@ -121,7 +136,7 @@ def delete_student(docno: str):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE StudentMaster
+        UPDATE STUDENT_MASTER
         SET STD_ISACTIVE = 0
         WHERE STD_DOCNO = ?
     """, (docno,))

@@ -23,8 +23,8 @@ function Dashboard() {
 
 
   const cards = [
-    { title: 'Total Students', value: data.total_students, 
-      color: '#4CAF50', icon: '🎓', path: '/' },
+   { title: 'Total Students', value: data.total_students, 
+      color: '#4CAF50', icon: '🎓', path: '/students' },
     { title: 'Total Staff', value: data.total_staff, 
       color: '#2196F3', icon: '👨‍🏫', path: '/staff' },
     { title: 'Fees Collected (This Month)', value: `AED ${data.fees_collected}`, 
@@ -63,7 +63,7 @@ function Dashboard() {
 
       {/* Navigation Buttons */}
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <button onClick={() => navigate('/')}
+        <button onClick={() => navigate('/students')}
           style={{ padding: '10px 20px', backgroundColor: '#4CAF50',
                    color: 'white', border: 'none', borderRadius: '5px',
                    cursor: 'pointer' }}>

@@ -30,6 +30,13 @@ function StudentList() {
   return (
     <div style={{ padding: '20px' }}>
       <h2>Student Master</h2>
+      <button onClick={() => navigate('/')}
+        style={{ marginBottom: '20px', marginRight: '10px',
+           padding: '10px 20px', 
+           backgroundColor: '#607D8B', color: 'white', 
+           border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+        🏠 Dashboard
+      </button>
       <button onClick={() => navigate('/add-student')}
         style={{ marginBottom: '20px', padding: '10px 20px',
                  backgroundColor: '#4CAF50', color: 'white',
