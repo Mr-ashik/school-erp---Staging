@@ -47,40 +47,42 @@ function StudentList() {
   <table border="1" cellPadding="10" 
     style={{ width: '100%', borderCollapse: 'collapse' }}>
     <thead style={{ backgroundColor: '#f2f2f2' }}>
-      <tr>
-        {/* Auto generate headers from API response */}
-        {Object.keys(students[0]).map(key => (
-          <th key={key}>{key}</th>
-        ))}
-        <th>Actions</th>
-      </tr>
-    </thead>
+  <tr>
+    {Object.keys(students[0])
+      .filter(key => !key.endsWith('_HIDDEN'))
+      .map(key => (
+        <th key={key}>{key}</th>
+    ))}
+    <th>Actions</th>
+  </tr>
+</thead>
     <tbody>
-      {students.map(student => (
-        <tr key={student.STD_DOCNO}>
-          {/* Auto generate cells from API response */}
-          {Object.values(student).map((value, index) => (
-            <td key={index}>{value}</td>
-          ))}
-          <td>
-            <button
-              onClick={() => navigate(`/edit-student/${student.STD_DOCNO}`)}
-              style={{ padding: '5px 10px', backgroundColor: '#2196F3',
-                       color: 'white', border: 'none', borderRadius: '3px',
-                       cursor: 'pointer', marginRight: '5px' }}>
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(student.STD_DOCNO)}
-              style={{ padding: '5px 10px', backgroundColor: '#f44336',
-                       color: 'white', border: 'none', borderRadius: '3px',
-                       cursor: 'pointer' }}>
-              Delete
-            </button>
-          </td>
-        </tr>
+  {students.map(student => (
+    <tr key={student.STD_DOCNO_HIDDEN}>
+      {Object.entries(student)
+        .filter(([key]) => !key.endsWith('_HIDDEN'))
+        .map(([key, value], index) => (
+          <td key={index}>{value}</td>
       ))}
-    </tbody>
+      <td>
+        <button
+          onClick={() => navigate(`/edit-student/${student.STD_DOCNO_HIDDEN}`)}
+          style={{ padding: '5px 10px', backgroundColor: '#2196F3',
+                   color: 'white', border: 'none', borderRadius: '3px',
+                   cursor: 'pointer', marginRight: '5px' }}>
+          Edit
+        </button>
+        <button
+          onClick={() => handleDelete(student.STD_DOCNO_HIDDEN)}
+          style={{ padding: '5px 10px', backgroundColor: '#f44336',
+                   color: 'white', border: 'none', borderRadius: '3px',
+                   cursor: 'pointer' }}>
+          Delete
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
   </table>
 )}
     </div>

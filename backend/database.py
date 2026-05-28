@@ -9,6 +9,9 @@ def get_connection():
     )
     return conn
 
+def normalize_keys(row_dict):
+    return {k.upper(): v for k, v in row_dict.items()}
+
 def filter_hidden(cursor):
     columns = [column[0] for column in cursor.description]
     rows = cursor.fetchall()
@@ -19,3 +22,11 @@ def filter_hidden(cursor):
                        if not k.endswith('_hidden')}
         result.append(filtered_row)
     return result
+
+def get_all(cursor):
+    columns = [column[0] for column in cursor.description]
+    rows = cursor.fetchall()
+    return [
+        {k.upper(): v for k, v in dict(zip(columns, row)).items()}
+        for row in rows
+    ]

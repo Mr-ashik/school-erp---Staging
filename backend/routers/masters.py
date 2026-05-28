@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from database import get_connection
+from database import get_connection, filter_hidden, get_all
 
 router = APIRouter()
 

@@ -67,7 +67,7 @@ function AttendanceReport() {
             style={{ padding: '8px', marginTop: '5px' }}>
             <option value="">Select Class</option>
             {classes.map(c => (
-              <option key={c.CLS_DOCNO} value={c.CLS_NAME}>{c.CLS_NAME}</option>
+              <option key={c.CLS_DOCNO} value={c.CLS_DOCNO}>{c.CLS_NAME}</option>
             ))}
           </select>
         </div>
@@ -78,7 +78,7 @@ function AttendanceReport() {
             style={{ padding: '8px', marginTop: '5px' }}>
             <option value="">Select Section</option>
             {sections.map(s => (
-              <option key={s.SEC_DOCNO} value={s.SEC_NAME}>{s.SEC_NAME}</option>
+              <option key={s.SEC_DOCNO} value={s.SEC_DOCNO}>{s.SEC_NAME}</option>
             ))}
           </select>
         </div>

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from database import get_connection
+from database import get_connection, filter_hidden, get_all
 from datetime import date
 from typing import List
+import json
 
 router = APIRouter()
 
@@ -41,33 +42,50 @@ def get_next_docno(cursor):
 def get_sessions():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT SES_DOCNO, SES_NAME 
-        FROM SESSION_MASTER 
-        WHERE SES_ISACTIVE = 1
-    """)
-    rows = cursor.fetchall()
+    cursor.execute("EXEC usp_Get_Sessions")
+    result = filter_hidden(cursor)
     conn.close()
-    return [{"SES_DOCNO": row[0], "SES_NAME": row[1]} for row in rows]
+    return result
+# @router.get("/sessions/")
+# def get_sessions():
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     cursor.execute("""
+#         SELECT SES_DOCNO, SES_NAME 
+#         FROM SESSION_MASTER 
+#         WHERE SES_ISACTIVE = 1
+#     """)
+#     rows = cursor.fetchall()
+#     conn.close()
+#     return [{"SES_DOCNO": row[0], "SES_NAME": row[1]} for row in rows]
 
 # GET STUDENTS BY CLASS AND SECTION
 @router.get("/attendance/students/")
 def get_students_by_class(cls: str, section: str):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT STD_DOCNO, STD_STUDENTNAME, CLS_NAME, SEC_NAME
-        FROM STUDENT_MASTER
-        INNER JOIN CLASS_MASTER  ON
-            STD_CLS_DOCNO = CLS_DOCNO
-        INNER JOIN SECTION_MASTER ON
-            STD_SEC_DOCNO = SEC_DOCNO
-        WHERE STD_CLS_DOCNO = ? AND STD_SEC_DOCNO = ? AND STD_ISACTIVE = 1
-    """, (cls, section))
-    rows = cursor.fetchall()
+    cursor.execute("EXEC usp_Get_Students_For_Attendance @CLS_DOCNO=?, @SEC_DOCNO=?",
+                   (cls, section))
+    result = get_all(cursor)
     conn.close()
-    return [{"STD_DOCNO": row[0], "STD_STUDENTNAME": row[1],
-             "STD_CLASS": row[2], "STD_SECTION": row[3]} for row in rows]
+    return result
+# @router.get("/attendance/students/")
+# def get_students_by_class(cls: str, section: str):
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     cursor.execute("""
+#         SELECT STD_DOCNO, STD_STUDENTNAME, CLS_NAME, SEC_NAME
+#         FROM STUDENT_MASTER
+#         INNER JOIN CLASS_MASTER  ON
+#             STD_CLS_DOCNO = CLS_DOCNO
+#         INNER JOIN SECTION_MASTER ON
+#             STD_SEC_DOCNO = SEC_DOCNO
+#         WHERE STD_CLS_DOCNO = ? AND STD_SEC_DOCNO = ? AND STD_ISACTIVE = 1
+#     """, (cls, section))
+#     rows = cursor.fetchall()
+#     conn.close()
+#     return [{"STD_DOCNO": row[0], "STD_STUDENTNAME": row[1],
+#              "STD_CLASS": row[2], "STD_SECTION": row[3]} for row in rows]
 
 # MARK ATTENDANCE
 @router.post("/attendance/")
@@ -75,27 +93,51 @@ def mark_attendance(data: AttendanceSubmit):
     conn = get_connection()
     cursor = conn.cursor()
     for record in data.records:
-        # Check if already marked
-        cursor.execute("""
-            SELECT COUNT(*) FROM ATTENDANCE_MASTER
-            WHERE ATT_DATE = ? AND ATT_SES_DOCNO = ? AND ATT_STD_DOCNO = ?
-        """, (data.ATT_DATE, data.ATT_SES_DOCNO, record.ATT_STD_DOCNO))
-        exists = cursor.fetchone()[0]
-        if exists:
-            continue  # Skip already marked
         docno = get_next_docno(cursor)
-        cursor.execute("""
-            INSERT INTO ATTENDANCE_MASTER
-            (ATT_DOCTYPE, ATT_DOCNO, ATT_DATE, ATT_SES_DOCNO, ATT_STD_DOCNO,
-             ATT_STD_NAME, ATT_CLASS, ATT_SECTION, ATT_STATUS, ATT_REMARKS)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, ('ATT', docno, data.ATT_DATE, data.ATT_SES_DOCNO,
-              record.ATT_STD_DOCNO, record.ATT_STD_NAME,
-              record.ATT_CLASS, record.ATT_SECTION,
-              record.ATT_STATUS, record.ATT_REMARKS))
+        
+        # Build JSON dynamically — merge all header fields with record
+        record_dict = record.model_dump(mode='json')
+        header_dict = data.model_dump(mode='json')
+        
+        # Remove records list from header
+        header_dict.pop('records', None)
+        
+        # Merge header into record
+        record_dict.update(header_dict)
+        
+        record_json = json.dumps(record_dict, default=str)
+        
+        cursor.execute("EXEC usp_Mark_Attendance @ATT_DOCNO=?, @JSON=?",
+                       (docno, record_json))
     conn.commit()
     conn.close()
     return {"message": "Attendance marked successfully"}
+# @router.post("/attendance/")
+# def mark_attendance(data: AttendanceSubmit):
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     for record in data.records:
+#         # Check if already marked
+#         cursor.execute("""
+#             SELECT COUNT(*) FROM ATTENDANCE_MASTER
+#             WHERE ATT_DATE = ? AND ATT_SES_DOCNO = ? AND ATT_STD_DOCNO = ?
+#         """, (data.ATT_DATE, data.ATT_SES_DOCNO, record.ATT_STD_DOCNO))
+#         exists = cursor.fetchone()[0]
+#         if exists:
+#             continue  # Skip already marked
+#         docno = get_next_docno(cursor)
+#         cursor.execute("""
+#             INSERT INTO ATTENDANCE_MASTER
+#             (ATT_DOCTYPE, ATT_DOCNO, ATT_DATE, ATT_SES_DOCNO, ATT_STD_DOCNO,
+#              ATT_STD_NAME, ATT_CLASS, ATT_SECTION, ATT_STATUS, ATT_REMARKS)
+#             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+#         """, ('ATT', docno, data.ATT_DATE, data.ATT_SES_DOCNO,
+#               record.ATT_STD_DOCNO, record.ATT_STD_NAME,
+#               record.ATT_CLASS, record.ATT_SECTION,
+#               record.ATT_STATUS, record.ATT_REMARKS))
+#     conn.commit()
+#     conn.close()
+#     return {"message": "Attendance marked successfully"}
 
 # GET ATTENDANCE REPORT
 @router.get("/attendance/report/")
@@ -103,15 +145,28 @@ def get_attendance_report(cls: str, section: str, att_date: date):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT A.ATT_STD_DOCNO, A.ATT_STD_NAME, A.ATT_STATUS, 
-               A.ATT_REMARKS, S.SES_NAME
-        FROM ATTENDANCE_MASTER A
-        JOIN SESSION_MASTER S ON A.ATT_SES_DOCNO = S.SES_DOCNO
-        WHERE A.ATT_CLASS = ? AND A.ATT_SECTION = ? AND A.ATT_DATE = ?
-        AND A.ATT_ISACTIVE = 1
+        EXEC usp_Get_Attendance_Report
+            @CLS_DOCNO  = ?,
+            @SEC_DOCNO  = ?,
+            @ATT_DATE   = ?
     """, (cls, section, att_date))
-    rows = cursor.fetchall()
+    result = get_all(cursor)
     conn.close()
-    return [{"STD_DOCNO": row[0], "STD_NAME": row[1],
-             "STATUS": row[2], "REMARKS": row[3],
-             "SESSION": row[4]} for row in rows]
+    return result
+# @router.get("/attendance/report/")
+# def get_attendance_report(cls: str, section: str, att_date: date):
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     cursor.execute("""
+#         SELECT A.ATT_STD_DOCNO, A.ATT_STD_NAME, A.ATT_STATUS, 
+#                A.ATT_REMARKS, S.SES_NAME
+#         FROM ATTENDANCE_MASTER A
+#         JOIN SESSION_MASTER S ON A.ATT_SES_DOCNO = S.SES_DOCNO
+#         WHERE A.ATT_CLASS = ? AND A.ATT_SECTION = ? AND A.ATT_DATE = ?
+#         AND A.ATT_ISACTIVE = 1
+#     """, (cls, section, att_date))
+#     rows = cursor.fetchall()
+#     conn.close()
+#     return [{"STD_DOCNO": row[0], "STD_NAME": row[1],
+#              "STATUS": row[2], "REMARKS": row[3],
+#              "SESSION": row[4]} for row in rows]

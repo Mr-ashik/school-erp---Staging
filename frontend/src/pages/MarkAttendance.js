@@ -16,7 +16,6 @@ function MarkAttendance() {
     ses_docno: ''
   });
 
-  // Load sessions, classes, sections on page load
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/sessions/')
       .then(res => setSessions(res.data))
@@ -31,9 +30,7 @@ function MarkAttendance() {
       .catch(err => console.error(err));
   }, []);
 
-  // Load students when class and section are selected
   const loadStudents = () => {
-     console.log('Class:', filter.cls, 'Section:', filter.section);
     if (!filter.cls || !filter.section) {
       alert('Please select Class and Section!');
       return;
@@ -43,7 +40,7 @@ function MarkAttendance() {
         setStudents(res.data);
         const defaultAtt = {};
         res.data.forEach(s => {
-          defaultAtt[s.STD_DOCNO] = { status: 'P', remarks: '' };
+          defaultAtt[s.STD_DOCNO_HIDDEN] = { status: 'P', remarks: '' };
         });
         setAttendance(defaultAtt);
       })
@@ -51,11 +48,17 @@ function MarkAttendance() {
   };
 
   const handleStatusChange = (docno, status) => {
-    setAttendance({ ...attendance, [docno]: { ...attendance[docno], status } });
+    setAttendance(prev => ({
+      ...prev,
+      [docno]: { ...prev[docno], status }
+    }));
   };
 
   const handleRemarksChange = (docno, remarks) => {
-    setAttendance({ ...attendance, [docno]: { ...attendance[docno], remarks } });
+    setAttendance(prev => ({
+      ...prev,
+      [docno]: { ...prev[docno], remarks }
+    }));
   };
 
   const handleSubmit = () => {
@@ -68,12 +71,12 @@ function MarkAttendance() {
       return;
     }
     const records = students.map(s => ({
-      ATT_STD_DOCNO: s.STD_DOCNO,
+      ATT_STD_DOCNO: s.STD_DOCNO_HIDDEN,
       ATT_STD_NAME: s.STD_STUDENTNAME,
       ATT_CLASS: s.STD_CLASS,
       ATT_SECTION: s.STD_SECTION,
-      ATT_STATUS: attendance[s.STD_DOCNO]?.status || 'P',
-      ATT_REMARKS: attendance[s.STD_DOCNO]?.remarks || ''
+      ATT_STATUS: attendance[s.STD_DOCNO_HIDDEN]?.status || 'P',
+      ATT_REMARKS: attendance[s.STD_DOCNO_HIDDEN]?.remarks || ''
     }));
 
     axios.post('http://127.0.0.1:8000/attendance/', {
@@ -92,7 +95,6 @@ function MarkAttendance() {
     <div style={{ padding: '20px' }}>
       <h2>Mark Attendance</h2>
 
-      {/* Filter Section */}
       <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <div>
           <label>Date</label><br />
@@ -143,7 +145,6 @@ function MarkAttendance() {
         </div>
       </div>
 
-      {/* Students Table */}
       {students.length > 0 && (
         <>
           <table border="1" cellPadding="10"
@@ -159,13 +160,14 @@ function MarkAttendance() {
             </thead>
             <tbody>
               {students.map((s, index) => (
-                <tr key={s.STD_DOCNO}>
+                <tr key={s.STD_DOCNO_HIDDEN}>
                   <td>{index + 1}</td>
-                  <td>{s.STD_DOCNO}</td>
+                  <td>{s.STD_DOCNO_HIDDEN}</td>
                   <td>{s.STD_STUDENTNAME}</td>
                   <td>
-                    <select value={attendance[s.STD_DOCNO]?.status || 'P'}
-                      onChange={e => handleStatusChange(s.STD_DOCNO, e.target.value)}
+                    <select
+                      value={attendance[s.STD_DOCNO_HIDDEN]?.status || 'P'}
+                      onChange={e => handleStatusChange(s.STD_DOCNO_HIDDEN, e.target.value)}
                       style={{ padding: '5px' }}>
                       <option value="P">Present</option>
                       <option value="A">Absent</option>
@@ -173,8 +175,9 @@ function MarkAttendance() {
                     </select>
                   </td>
                   <td>
-                    <input value={attendance[s.STD_DOCNO]?.remarks || ''}
-                      onChange={e => handleRemarksChange(s.STD_DOCNO, e.target.value)}
+                    <input
+                      value={attendance[s.STD_DOCNO_HIDDEN]?.remarks || ''}
+                      onChange={e => handleRemarksChange(s.STD_DOCNO_HIDDEN, e.target.value)}
                       placeholder="Optional"
                       style={{ padding: '5px', width: '150px' }} />
                   </td>

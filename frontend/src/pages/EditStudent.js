@@ -18,18 +18,18 @@ function EditStudent() {
   });
 
   // Load classes, sections and student data
-  useEffect(() => {
-    axios.get('http://127.0.0.1:8000/classes/')
-      .then(res => setClasses(res.data))
-      .catch(err => console.error(err));
-
-    axios.get('http://127.0.0.1:8000/sections/')
-      .then(res => setSections(res.data))
-      .catch(err => console.error(err));
-
-    axios.get(`http://127.0.0.1:8000/students/${docno}`)
-      .then(res => setFormData(res.data))
-      .catch(err => console.error(err));
+ useEffect(() => {
+    Promise.all([
+      axios.get('http://127.0.0.1:8000/classes/'),
+      axios.get('http://127.0.0.1:8000/sections/'),
+      axios.get(`http://127.0.0.1:8000/students/${docno}`)
+    ])
+    .then(([classRes, sectionRes, studentRes]) => {
+      setClasses(classRes.data);
+      setSections(sectionRes.data);
+      setFormData(studentRes.data);
+    })
+    .catch(err => console.error(err));
   }, [docno]);
 
   const handleChange = (e) => {
