@@ -9,6 +9,18 @@ def get_connection():
     )
     return conn
 
+# def get_next_docno(cursor, doctype):
+#     cursor.execute("EXEC usp_Get_Next_DocNo @DOCTYPE=?", (doctype,))
+#     cursor.nextset()
+#     row = cursor.fetchone()
+#     return row[0]
+
+
+def get_next_docno(cursor, doctype):
+    cursor.execute("{CALL usp_Get_Next_DocNo (?)}", (doctype,))
+    row = cursor.fetchone()
+    return row[0]
+
 def normalize_keys(row_dict):
     return {k.upper(): v for k, v in row_dict.items()}
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from database import get_connection ,filter_hidden, get_all
+from database import get_connection ,filter_hidden, get_all,get_next_docno
 from datetime import date
 import json
 
@@ -15,26 +15,26 @@ class Student(BaseModel):
     STD_CLS_DOCNO: str
     STD_SEC_DOCNO: str
 
-def get_next_docno(cursor):
-    cursor.execute("""
-        SELECT TOP 1 STD_DOCNO 
-        FROM STUDENT_MASTER 
-        WHERE STD_DOCTYPE = 'STU'
-        ORDER BY STD_DOCNO DESC
-    """)
-    row = cursor.fetchone()
-    if row is None:
-        return "STU-0001"
-    last = row[0]
-    num = int(last.split("-")[1]) + 1
-    return f"STU-{num:04d}"
+# def get_next_docno(cursor):
+#     cursor.execute("""
+#         SELECT TOP 1 STD_DOCNO 
+#         FROM STUDENT_MASTER 
+#         WHERE STD_DOCTYPE = 'STU'
+#         ORDER BY STD_DOCNO DESC
+#     """)
+#     row = cursor.fetchone()
+#     if row is None:
+#         return "STU-0001"
+#     last = row[0]
+#     num = int(last.split("-")[1]) + 1
+#     return f"STU-{num:04d}"
 
 # ADD STUDENT
 @router.post("/students/")
 def add_student(student: Student):
     conn = get_connection()
     cursor = conn.cursor()
-    docno = get_next_docno(cursor)
+    docno = get_next_docno(cursor, 'STU')
     
     # Convert student data to JSON
     student_json = json.dumps(student.model_dump(), default=str)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from database import get_connection, filter_hidden, get_all
+from database import get_connection, filter_hidden, get_all,get_next_docno
 from datetime import date
 from typing import List
 import json
@@ -23,19 +23,19 @@ class AttendanceSubmit(BaseModel):
     records: List[AttendanceRecord]
 
 # Auto generate next ATT_DOCNO
-def get_next_docno(cursor):
-    cursor.execute("""
-        SELECT TOP 1 ATT_DOCNO 
-        FROM ATTENDANCE_MASTER
-        WHERE ATT_DOCTYPE = 'ATT'
-        ORDER BY ATT_DOCNO DESC
-    """)
-    row = cursor.fetchone()
-    if row is None:
-        return "ATT-0001"
-    last = row[0]
-    num = int(last.split("-")[1]) + 1
-    return f"ATT-{num:04d}"
+# def get_next_docno(cursor):
+#     cursor.execute("""
+#         SELECT TOP 1 ATT_DOCNO 
+#         FROM ATTENDANCE_MASTER
+#         WHERE ATT_DOCTYPE = 'ATT'
+#         ORDER BY ATT_DOCNO DESC
+#     """)
+#     row = cursor.fetchone()
+#     if row is None:
+#         return "ATT-0001"
+#     last = row[0]
+#     num = int(last.split("-")[1]) + 1
+#     return f"ATT-{num:04d}"
 
 # GET ALL SESSIONS
 @router.get("/sessions/")
@@ -93,7 +93,7 @@ def mark_attendance(data: AttendanceSubmit):
     conn = get_connection()
     cursor = conn.cursor()
     for record in data.records:
-        docno = get_next_docno(cursor)
+        docno = get_next_docno(cursor, 'ATT')
         
         # Build JSON dynamically — merge all header fields with record
         record_dict = record.model_dump(mode='json')
