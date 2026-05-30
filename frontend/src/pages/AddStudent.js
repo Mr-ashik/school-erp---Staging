@@ -48,10 +48,20 @@ function AddStudent() {
 .then(res => {
   alert('Student added successfully! Doc No: ' + res.data.STD_DOCNO);
   navigate('/students');
+  //  if (res.data.status === 1) {
+  //   alert('Student added successfully! Doc No: ' + res.data.STD_DOCNO);
+  //   navigate('/students');
+  // } else {
+  //   alert('Failed: ' + res.data.message);
+  // }
 })
-.catch(err => console.error(err));
+// .catch(err => console.error(err));
+//   };
+.catch(err => {
+  const msg = err.response?.data?.detail || 'Something went wrong!';
+  alert('Error: ' + msg);
+});
   };
-
 
 
   return (

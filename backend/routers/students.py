@@ -36,16 +36,84 @@ class Student(BaseModel):
 def add_student(student: Student):
     conn = get_connection()
     cursor = conn.cursor()
-    docno = get_next_docno(cursor, 'STU')
+    try:
+        docno = get_next_docno(cursor, 'STU')
+        student_json = json.dumps(student.model_dump(), default=str)
+
+        # Use output parameters
+        success = cursor.var(int) if hasattr(cursor, 'var') else None
+        cursor.execute("""
+            DECLARE @SUCCESS BIT, @MESSAGE NVARCHAR(MAX)
+            EXEC usp_Add_Student 
+                @STD_DOCNO  = ?,
+                @JSON       = ?,
+                @SUCCESS    = @SUCCESS OUTPUT,
+                @MESSAGE    = @MESSAGE OUTPUT
+            SELECT @SUCCESS AS SUCCESS, @MESSAGE AS MESSAGE
+        """, (docno, student_json))
+        
+        result = cursor.fetchone()
+        conn.commit()
+        
+        if result and result[0] == 1:
+            return {"message": "Student added successfully", "STD_DOCNO": docno}
+        else:
+            raise HTTPException(status_code=500, 
+                              detail=result[1] if result else "Unknown error")
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+# @router.post("/students/")
+# def add_student(student: Student):
+#     conn = get_connection()
+#     cursor = conn.cursor()
+
+#     try:
+#         docno = get_next_docno(cursor, 'STU')
+
+#         student_json = json.dumps(student.model_dump(), default=str)
+
+#         cursor.execute(
+#             "EXEC usp_Add_Student @STD_DOCNO=?, @JSON=?",
+#             (docno, student_json)
+#         )
+
+#         conn.commit()
+
+#         return {
+#             "status": 1,
+#             "message": "Student added successfully",
+#             "STD_DOCNO": docno
+#         }
+
+#     except Exception as e:
+#         conn.rollback()
+
+#         return {
+#             "status": 0,
+#             "message": str(e)
+#         }
+
+#     finally:
+#         conn.close()
+# @router.post("/students/")
+# def add_student(student: Student):
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     docno = get_next_docno(cursor, 'STU')
     
-    # Convert student data to JSON
-    student_json = json.dumps(student.model_dump(), default=str)
+#     # Convert student data to JSON
+#     student_json = json.dumps(student.model_dump(), default=str)
     
-    cursor.execute("EXEC usp_Add_Student @STD_DOCNO=?, @JSON=?",
-                   (docno, student_json))
-    conn.commit()
-    conn.close()
-    return {"message": "Student added successfully", "STD_DOCNO": docno}
+#     cursor.execute("EXEC usp_Add_Student @STD_DOCNO=?, @JSON=?",
+#                    (docno, student_json))
+#     conn.commit()
+#     conn.close()
+#     return {"message": "Student added successfully", "STD_DOCNO": docno}
 # @router.post("/students/")
 # def add_student(student: Student):
 #     conn = get_connection()
