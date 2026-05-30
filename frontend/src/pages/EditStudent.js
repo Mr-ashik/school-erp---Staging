@@ -38,7 +38,12 @@ function EditStudent() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.put(`http://127.0.0.1:8000/students/${docno}`, formData)
+    axios.put(`http://127.0.0.1:8000/students/${docno}`, 
+      {
+      ...formData,
+      USER_ID: 'SYSTEM',
+      MACHINE_ID: window.location.host
+      })
       .then(() => {
         alert('Student updated successfully!');
         navigate('/students');

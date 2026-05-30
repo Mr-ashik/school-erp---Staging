@@ -14,6 +14,8 @@ class Student(BaseModel):
     STD_ADMISSIONDATE: date
     STD_CLS_DOCNO: str
     STD_SEC_DOCNO: str
+    USER_ID      : str = 'SYSTEM'
+    MACHINE_ID   : str = None
 
 # def get_next_docno(cursor):
 #     cursor.execute("""

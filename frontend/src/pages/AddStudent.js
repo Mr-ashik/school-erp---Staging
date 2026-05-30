@@ -33,13 +33,26 @@ function AddStudent() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://127.0.0.1:8000/students/', formData)
-      .then(res => {
-        alert('Student added successfully! Doc No: ' + res.data.STD_DOCNO);
-        navigate('/students');
-      })
-      .catch(err => console.error(err));
+    
+    // axios.post('http://127.0.0.1:8000/students/', formData)
+    //   .then(res => {
+    //     alert('Student added successfully! Doc No: ' + res.data.STD_DOCNO);
+    //     navigate('/students');
+    //   })    
+      // .catch(err => console.error(err));
+    axios.post('http://127.0.0.1:8000/students/', {
+  ...formData,
+  USER_ID: 'SYSTEM',
+  MACHINE_ID: window.location.host
+})
+.then(res => {
+  alert('Student added successfully! Doc No: ' + res.data.STD_DOCNO);
+  navigate('/students');
+})
+.catch(err => console.error(err));
   };
+
+
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px' }}>

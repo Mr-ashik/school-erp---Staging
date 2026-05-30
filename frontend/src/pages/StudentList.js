@@ -18,7 +18,13 @@ function StudentList() {
 
   const handleDelete = (docno) => {
     if (window.confirm('Are you sure you want to delete this student?')) {
-      axios.delete(`http://127.0.0.1:8000/students/${docno}`)
+      axios.delete(`http://127.0.0.1:8000/students/${docno}`,
+        {
+          data: {
+            USER_ID: localStorage.getItem("USER_ID"),
+            MACHINE_ID: window.location.host
+          }
+        })
         .then(() => {
           alert('Student deleted successfully!');
           fetchStudents();
