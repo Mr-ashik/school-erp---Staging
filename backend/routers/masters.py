@@ -32,3 +32,31 @@ def get_sections():
     rows = cursor.fetchall()
     conn.close()
     return [{"SEC_DOCNO": row[0], "SEC_NAME": row[1]} for row in rows]
+
+@router.post("/sync-lastno/")
+def sync_lastno(data: dict):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("EXEC usp_Update_LastNo @DOCTYPE=?", (data['DOCTYPE'],))
+    result = get_all(cursor)
+    conn.commit()
+    conn.close()
+    return result
+
+# @router.get("/lastnos/")
+# def get_lastnos():
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     cursor.execute("SELECT * FROM LASTNO_MASTER WHERE LNO_ISACTIVE = 1")
+#     result = get_all(cursor)
+#     conn.close()
+#     return result
+
+@router.get("/lastno-status/")
+def get_lastno_status():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("EXEC usp_Get_LastNo_Status")
+    result = get_all(cursor)
+    conn.close()
+    return result

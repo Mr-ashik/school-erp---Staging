@@ -6,6 +6,7 @@ import AddStudent from './pages/AddStudent';
 import EditStudent from './pages/EditStudent';
 import MarkAttendance from './pages/MarkAttendance';
 import AttendanceReport from './pages/AttendanceReport';
+import SystemUtilities from './pages/SystemUtilities';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/edit-student/:docno" element={<EditStudent />} />
         <Route path="/attendance" element={<MarkAttendance />} />
         <Route path="/attendance-report" element={<AttendanceReport />} />
+         <Route path="/system-utilities" element={<SystemUtilities />} />
       </Routes>
     </Router>
   );
